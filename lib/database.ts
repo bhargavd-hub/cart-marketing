@@ -1,7 +1,13 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 
-const DB_PATH = path.join(process.cwd(), 'data', 'db.json')
+function getDbPath(): string {
+  if (process.env.VERCEL) {
+    return path.join('/tmp', 'cart-marketing-db.json')
+  }
+
+  return path.join(process.cwd(), 'data', 'db.json')
+}
 
 type Product = { id: number; name: string; categoryId: number; price: number }
 type Category = { id: number; name: string }
@@ -22,23 +28,26 @@ const EMPTY_DB: DatabaseShape = {
 }
 
 async function ensureDbFile(): Promise<void> {
-  await fs.mkdir(path.dirname(DB_PATH), { recursive: true })
+  const dbPath = getDbPath()
+  await fs.mkdir(path.dirname(dbPath), { recursive: true })
 
   try {
-    await fs.access(DB_PATH)
+    await fs.access(dbPath)
   } catch {
-    await fs.writeFile(DB_PATH, JSON.stringify(EMPTY_DB, null, 2), 'utf8')
+    await fs.writeFile(dbPath, JSON.stringify(EMPTY_DB, null, 2), 'utf8')
   }
 }
 
 async function readDb(): Promise<DatabaseShape> {
+  const dbPath = getDbPath()
   await ensureDbFile()
-  const raw = await fs.readFile(DB_PATH, 'utf8')
+  const raw = await fs.readFile(dbPath, 'utf8')
   return JSON.parse(raw) as DatabaseShape
 }
 
 async function writeDb(data: DatabaseShape): Promise<void> {
-  await fs.writeFile(DB_PATH, JSON.stringify(data, null, 2), 'utf8')
+  const dbPath = getDbPath()
+  await fs.writeFile(dbPath, JSON.stringify(data, null, 2), 'utf8')
 }
 
 function buildSeedData(): DatabaseShape {
